@@ -1,7 +1,7 @@
 package mx.uam.integracion.casa.Casa.service.impl;
 
-import mx.uam.integracion.casa.Casa.dto.UserDTO;
-import mx.uam.integracion.casa.Casa.entity.User;
+import mx.uam.integracion.casa.Casa.dto.UsuarioDTO;
+import mx.uam.integracion.casa.Casa.entity.Usuario;
 import mx.uam.integracion.casa.Casa.repository.UserRepository;
 import mx.uam.integracion.casa.Casa.service.userService;
 import org.springframework.stereotype.Service;
@@ -11,75 +11,67 @@ import java.util.Optional;
 
 @Service
 public class userServiceimpl implements userService {
-    private final UserRepository userRepository;
+    private final UserRepository usuarioRepository;
 
-    public userServiceimpl(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public userServiceimpl(UserRepository usuarioRepository) {
+        this.usuarioRepository = usuarioRepository;
     }
 
     @Override
-    public UserDTO createUser(UserDTO userDTO) {
-        // Crear una nueva entidad User a partir del DTO
-        User user = new User();
-        user.setId(userDTO.getId()); // Usar el ID proporcionado por el cliente
-        user.setName(userDTO.getName());
-        user.setLastName(userDTO.getLastName());
-        user.setAge(userDTO.getAge());
-
-        // Guardar el usuario en la base de datos
-        User savedUser = userRepository.save(user);
-
-        // Convertir la entidad guardada de vuelta a un DTO
-        UserDTO savedUserDTO = new UserDTO();
-        savedUserDTO.setId(savedUser.getId());
-        savedUserDTO.setName(savedUser.getName());
-        savedUserDTO.setLastName(savedUser.getLastName());
-        savedUserDTO.setAge(savedUser.getAge());
-
-        return savedUserDTO;
-    }
-
-    @Override
-    public UserDTO[] getAllUsers() {
-        List<User> users = userRepository.findAll();
-        UserDTO[] userDTOs = new UserDTO[users.size()];
-        for (int i = 0; i < users.size(); i++) {
-            User user = users.get(i);
-            UserDTO userDTO = new UserDTO();
-            userDTO.setId(user.getId());
-            userDTO.setName(user.getName());
-            userDTO.setLastName(user.getLastName());
-            userDTO.setAge(user.getAge());
-            userDTOs[i] = userDTO;
+    public UsuarioDTO createUsuario(UsuarioDTO usuarioDTO) {
+        if (usuarioRepository.existsById(usuarioDTO.getIdUsuario())) {
+            throw new RuntimeException("Ya existe un usuario con el ID: " + usuarioDTO.getIdUsuario());
         }
-        return userDTOs;
+
+        Usuario usuario = new Usuario();
+        usuario.setIdUsuario(usuarioDTO.getIdUsuario());
+        usuario.setNombre(usuarioDTO.getNombre());
+        usuario.setApellido(usuarioDTO.getApellido());
+        usuario.setEdad(usuarioDTO.getEdad());
+
+        Usuario savedUsuario = usuarioRepository.save(usuario);
+
+        return convertToDTO(savedUsuario);
     }
 
     @Override
-    public void deleteUser(String id) {
-        userRepository.deleteById(id);
+    public UsuarioDTO[] getAllUsuarios() {
+        List<Usuario> usuarios = usuarioRepository.findAll();
+        return usuarios.stream()
+                .map(this::convertToDTO)
+                .toArray(UsuarioDTO[]::new);
     }
 
     @Override
-    public UserDTO updateUser(String id, UserDTO userDTO) {
-        Optional<User> optionalUser = userRepository.findById(id);
-        if (optionalUser.isPresent()) {
-            User user = optionalUser.get();
-            user.setName(userDTO.getName());
-            user.setLastName(userDTO.getLastName());
-            user.setAge(userDTO.getAge());
+    public UsuarioDTO updateUsuario(Long id, UsuarioDTO usuarioDTO) {
+        Optional<Usuario> optionalUsuario = usuarioRepository.findById(id);
+        if (optionalUsuario.isPresent()) {
+            Usuario usuario = optionalUsuario.get();
+            usuario.setNombre(usuarioDTO.getNombre());
+            usuario.setApellido(usuarioDTO.getApellido());
+            usuario.setEdad(usuarioDTO.getEdad());
 
-            User updatedUser = userRepository.save(user);
-
-            UserDTO updatedUserDTO = new UserDTO();
-            updatedUserDTO.setId(updatedUser.getId());
-            updatedUserDTO.setName(updatedUser.getName());
-            updatedUserDTO.setLastName(updatedUser.getLastName());
-            updatedUserDTO.setAge(updatedUser.getAge());
-
-            return updatedUserDTO;
+            Usuario updatedUsuario = usuarioRepository.save(usuario);
+            return convertToDTO(updatedUsuario);
         } else {
-            throw new RuntimeException("User not found with id: " + id);
+            throw new RuntimeException("No se encontró un usuario con el ID: " + id);
         }
+    }
+
+    @Override
+    public void deleteUsuario(Long id) {
+        if (!usuarioRepository.existsById(id)) {
+            throw new RuntimeException("No se encontró un usuario con el ID: " + id);
+        }
+        usuarioRepository.deleteById(id);
+    }
+
+    private UsuarioDTO convertToDTO(Usuario usuario) {
+        UsuarioDTO usuarioDTO = new UsuarioDTO();
+        usuarioDTO.setIdUsuario(usuario.getIdUsuario());
+        usuarioDTO.setNombre(usuario.getNombre());
+        usuarioDTO.setApellido(usuario.getApellido());
+        usuarioDTO.setEdad(usuario.getEdad());
+        return usuarioDTO;
     }
 }
